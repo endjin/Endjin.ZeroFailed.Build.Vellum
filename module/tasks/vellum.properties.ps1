@@ -5,6 +5,12 @@
 # Synopsis: The path to the vellum cli tool; By default this is handled by the automated installation support
 $VellumCmd = $defaultVellumCmd
 
+# Synopsis: The GitHub repository hosting the Vellum .NET global tool
+$VellumGitHubRepo = 'endjin/Endjin.StaticSiteGen'
+
+# Synopsis: The name of the NuGet package that distributes the Vellum .NET global tool
+$VellumGlobalToolPackageName = 'vellum'
+
 # Synopsis: The version of the vellum cli to use; Defaults to the latest stable release
 $vellumVersion = ''         # when empty, the 'Latest' release will be installed
 
@@ -34,3 +40,6 @@ $Watch ??= $false
 
 # Synopsis: The GitHub token used to obtain the release artifact for the vellum cli global tool
 $VellumReleaseGitHubToken = property ZF_BUILD_VELLUM_RELEASE_GITHUB_TOKEN ''
+
+# Synopsis: Override this property to specify additional arguments on the Vellum CLI command line
+$AdditionalVellumArgs = @()

@@ -4,51 +4,75 @@
 
 # Internal properties
 $defaultVellumCmd = Join-Path $here ".zf" "vellum"
-$SkipEnsureGitHubCli = $false
 
 . $PSScriptRoot/vellum.properties.ps1
+
+task ForceEnsureGitHubCli -Before Init {
+    # Workaround issue with InvokeBuild 'property' keyword overriding other values
+    $script:SkipEnsureGitHubCli = $false
+}
 
 # Synopsis: Installs the vellum global tool via a GitHub release on a private repo
 task InstallVellum -If {$VellumCmd -eq $defaultVellumCmd} EnsureGitHubCli,{
 
-    if (!$vellumVersion) {
-        # Find the version number of the 'Latest' GitHub release
-        $latestVersion = exec { gh release list -R endjin/Endjin.StaticSiteGen } |
-                            ConvertFrom-Csv -Header title,type,"tag name",published -Delimiter `t |
-                            Where-Object { $_.type -eq "Latest" } |
-                            Select-Object -ExpandProperty "tag name"
+    if ($VellumReleaseGitHubToken) {
+        if (Test-Path env:/GH_TOKEN) {
+            # Store any the current value for the GH_TOKEN environment variable, before we override it
+            $_zfSavedGhToken = $env:GH_TOKEN
+        }
+        $env:GH_TOKEN = $VellumReleaseGitHubToken
+    }
+
+    try {
+        if (!$vellumVersion) {
+            # Find the version number of the 'Latest' GitHub release
+            $latestVersion = exec { & gh release list -R $VellumGitHubRepo } |
+                                ConvertFrom-Csv -Header title,type,"tag name",published -Delimiter `t |
+                                Where-Object { $_.type -eq "Latest" } |
+                                Select-Object -ExpandProperty "tag name"
+            
+            if (!$latestVersion) {
+                throw "Unable to determine the latest version of the vellum .NET tool"
+            }
+        }
+        else {
+            $latestVersion = $vellumVersion
+        }
+        Write-Verbose "Required version: $latestVersion"
+    
+        $vellumDownloadPath = Split-Path -Parent $defaultVellumCmd
+        if (!(Test-Path $vellumDownloadPath)) {
+            New-Item -ItemType Directory $vellumDownloadPath | Out-Null
+        }
+    
+        $dotnetToolBaseArgs = @{
+            Name = "vellum"
+            Version = $latestVersion
+            ToolPath = $vellumDownloadPath
+        }
+    
+        # Check whether the required version is already installed. This would be handled by the 'Install-DotNetTool'
+        # cmdlet, but we need to know whether to download the NuGet package first.
+        $existingTool = Get-DotNetTool @dotnetToolBaseArgs -Verbose
+        if (!$existingTool -or $existingTool.Version -ne $latestVersion) {
+            $vellumPackageFullName = "{0}.{1}.nupkg" -f $VellumGlobalToolPackageName, $latestVersion
+            Write-Build White "Downloading vellum .NET tool package $vellumPackageFullName"
+            exec { & gh release download -R $VellumGitHubRepo $latestVersion -p $vellumPackageFullName -D $vellumDownloadPath --clobber }
         
-        if (!$latestVersion) {
-            throw "Unable to determine the latest version of the vellum .NET tool"
+            Install-DotNetTool @dotnetToolBaseArgs -AdditionalArgs @("--add-source", $vellumDownloadPath) -Verbose
+        }
+        else {
+            Write-Build White "Required version of vellum .NET tool already installed ($latestVersion)"
         }
     }
-    else {
-        $latestVersion = $vellumVersion
-    }
-    Write-Verbose "Required version: $latestVersion"
-
-    $vellumDownloadPath = Split-Path -Parent $defaultVellumCmd
-    if (!(Test-Path $vellumDownloadPath)) {
-        New-Item -ItemType Directory $vellumDownloadPath | Out-Null
-    }
-
-    $dotnetToolBaseArgs = @{
-        Name = "vellum"
-        Version = $latestVersion
-        ToolPath = $vellumDownloadPath
-    }
-
-    # Check whether the required version is already installed. This would be handled by the 'Install-DotNetTool'
-    # cmdlet, but we need to know whether to download the NuGet package first.
-    $existingTool = Get-DotNetTool @dotnetToolBaseArgs -Verbose
-    if (!$existingTool -or $existingTool.Version -ne $latestVersion) {
-        Write-Build White "Downloading vellum .NET tool package $latestVersion"
-        exec { & gh release download -R 'endjin/Endjin.StaticSiteGen' $latestVersion -p vellum.$($latestVersion).nupkg -D $vellumDownloadPath --clobber }
-    
-        Install-DotNetTool @dotnetToolBaseArgs -AdditionalArgs @("--add-source", $vellumDownloadPath) -Verbose
-    }
-    else {
-        Write-Build White "Required version of vellum .NET tool already installed ($latestVersion)"
+    finally {
+        # Restore the environment back to its original state
+        if (Test-Path variable:/_zfSavedGhToken) {
+            $env:GH_TOKEN = $_zfSavedGhToken
+        }
+        elseif (Test-Path env:/GH_TOKEN) {
+            Remove-Item env:/GH_TOKEN
+        }
     }
 }
 
@@ -97,6 +121,11 @@ task GenerateWebSite InstallVellum,CopyAssets,{
 
     if ($Watch) {
         $vellumArgs += "--watch"
+    }
+
+    if ($AdditionalVellumArgs) {
+        Write-Build White "AdditionalVellumArgs: $($AdditionalVellumArgs | ConvertTo-Json)"
+        $vellumArgs += $AdditionalVellumArgs
     }
 
     Write-Build White "VellumCmd: & $VellumCmd $($vellumArgs -join " ")"
