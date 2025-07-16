@@ -1,0 +1,37 @@
+{
+    "name": "<placeholder>",
+    "version": "<placeholder>",
+    "description": "`npm i`",
+    "main": "/index.html",
+    "devDependencies": {
+        "posthtml-include": "^2.0.1",
+        "rollup-plugin-multi-input": "^1.4.1",
+        "sass": "^1.77.3",
+        "vite": "^5.2.0"
+    },
+    "dependencies": {
+        "animejs": "^3.2.0",
+        "three": "^0.128.0",
+        "tippy.js": "^6.2.3"
+    },
+    "scripts": {
+        "dev": "vite --host",
+        "build": "vite build",
+        "prod": "vite build",
+        "preview": "vite preview"
+    },
+    "browserslist": [
+        "last 1 Chrome versions"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+<placeholder>"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "<placeholder>/issues"
+    },
+    "homepage": "<placeholder>#readme"
+}
