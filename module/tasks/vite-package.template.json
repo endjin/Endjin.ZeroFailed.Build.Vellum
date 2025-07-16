@@ -1,6 +1,6 @@
 {
     "name": "<placeholder>",
-    "version": "<placeholder>",
+    "version": "1.0.0",
     "description": "`npm i`",
     "main": "/index.html",
     "devDependencies": {

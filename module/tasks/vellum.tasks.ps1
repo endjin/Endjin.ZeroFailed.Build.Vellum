@@ -105,7 +105,7 @@ task GenerateWebSite InstallVellum,CopyAssets,{
     }
 }
 
-task generateNpmPackageJson GitVersion,{
+task GenerateViteNpmPackageJson {
 
     # Read in the template file
     $templatePackageJsonPath = Join-Path $PSScriptRoot 'vite-package.template.json'
@@ -113,7 +113,6 @@ task generateNpmPackageJson GitVersion,{
 
     # Customise the template for the current project
     $templatePackageJson.name = $SiteName
-    $templatePackageJson.version = $GitVersion.SemVer
     $templatePackageJson.repository.url = "git+$SiteRepositoryUrl"
     $templatePackageJson.bugs.url = "https://$SiteRepositoryUrl/issues"
     $templatePackageJson.homepage = "https://$SiteRepositoryUrl#readme"
@@ -125,7 +124,7 @@ task generateNpmPackageJson GitVersion,{
 
 # Synopsis: Runs the 'vite' tool to optimise the generated site
 $script:ViteWasRun = $false
-task RunVite -If { !$Preview } generateNpmPackageJson,{
+task RunVite -If { !$Preview } GenerateViteNpmPackageJson,{
 
     if (!(Test-Path (Join-Path $StaticSiteOutDir 'index.html'))) {
         Write-Warning "The generated site does not include an 'index.html' file, Vite build process will be skipped."
@@ -165,6 +164,20 @@ task CopyWWWRootFiles -If { $ViteWasRun } {
     Copy-Item $StaticSiteOutDir/lunr-docs.json -Destination $DistDir -Verbose
 }
 
-task BuildWebSite Init,GenerateWebSite,RunVite,CopyWWWRootFiles
+# Build process extensibility points
+task PreGenerateWebSite -Before GenerateWebSite
+task PostGenerateWebSite -After GenerateWebSite
+task PreRunVite -Before RunVite
+task PostRunVite -After RunVite
+task PreCopyWWWRootFiles -Before CopyWWWRootFiles
+task PostCopyWWWRootFiles -After CopyWWWRootFiles
+
+# Define the build process, using the basic structure provided by ZeroFailed.Build.Common
+task BuildWebSite RunFirst,
+                  Init,
+                  GenerateWebSite,
+                  RunVite,
+                  CopyWWWRootFiles,
+                  RunLast
 
 task . BuildWebSite
