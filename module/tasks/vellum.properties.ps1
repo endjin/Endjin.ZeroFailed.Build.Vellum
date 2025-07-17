@@ -24,13 +24,13 @@ $SiteBasePath = '.'
 $SiteRepositoryUrl = 'https://undefined-site-repo-fqdn'
 
 # Synopsis: The path where the vellum cli outputs are generated; Defaults to './.output'
-$GeneratedOutputsBasePath = './.zf'
+$VellumBasePath = Join-Path $here '.vellum'
 
 # Synopsis: The path where the vellum cli outputs are generated; Defaults to './.output'
-$StaticSiteOutDir = Join-Path $GeneratedOutputsBasePath '.output'
+$StaticSiteOutDir = Join-Path $VellumBasePath '.output'
 
 # Synopsis: The path where the final Vite-optimised static site is generated; Defaults to './.dist'
-$DistDir = Join-Path $GeneratedOutputsBasePath '.dist'
+$DistDir = Join-Path $VellumBasePath '.dist'
 
 # Synopsis: When true, enables the preview mode and does not run the vite compilation process
 $Preview ??= $false

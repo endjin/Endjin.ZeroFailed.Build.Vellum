@@ -3,17 +3,24 @@
 # </copyright>
 
 # Internal properties
-$defaultVellumCmd = Join-Path $here ".zf" "vellum"
+$defaultVellumCmd = { Join-Path $VellumBasePath 'bin' 'vellum' }
 
 . $PSScriptRoot/vellum.properties.ps1
 
+# Synopsis: Ensures that the presence of GitHub CLI is checked
 task ForceEnsureGitHubCli -Before Init {
     # Workaround issue with InvokeBuild 'property' keyword overriding other values
     $script:SkipEnsureGitHubCli = $false
 }
 
+# Synopsis: Handles lazy evaluation of Vellum tool path for customisation scenarios
+task ResolveVellumCmdPath {
+    $script:defaultVellumCmd = Resolve-Value $defaultVellumCmd
+    $script:VellumCmd = Resolve-Value $VellumCmd
+}
+
 # Synopsis: Installs the vellum global tool via a GitHub release on a private repo
-task InstallVellum -If {$VellumCmd -eq $defaultVellumCmd} EnsureGitHubCli,{
+task InstallVellum -If {$VellumCmd -eq $defaultVellumCmd} ResolveVellumCmdPath,EnsureGitHubCli,{
 
     if ($VellumReleaseGitHubToken) {
         if (Test-Path env:/GH_TOKEN) {
@@ -42,7 +49,7 @@ task InstallVellum -If {$VellumCmd -eq $defaultVellumCmd} EnsureGitHubCli,{
     
         $vellumDownloadPath = Split-Path -Parent $defaultVellumCmd
         if (!(Test-Path $vellumDownloadPath)) {
-            New-Item -ItemType Directory $vellumDownloadPath | Out-Null
+            New-Item -ItemType Directory $vellumDownloadPath -Force | Out-Null
         }
     
         $dotnetToolBaseArgs = @{
