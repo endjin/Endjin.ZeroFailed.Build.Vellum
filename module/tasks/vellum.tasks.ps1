@@ -143,9 +143,13 @@ task GenerateWebSite InstallVellum,CopyAssets,{
 
 task GenerateViteNpmPackageJson {
 
-    # Read in the template file
-    $templatePackageJsonPath = Join-Path $PSScriptRoot 'vite-package.template.json'
+    # Read in the template package.json file
+    $templatePackageJsonPath = Join-Path $PSScriptRoot '..' 'templates' 'vite-package.template.json'
     $templatePackageJson = Get-Content -Raw $templatePackageJsonPath | ConvertFrom-Json -Depth 100
+
+    # Read in the template package-lock.json file
+    $templatePackageLockJsonPath = Join-Path $PSScriptRoot '..' 'templates' 'vite-package-lock.template.json'
+    $templatePackageLockJson = Get-Content -Raw $templatePackageLockJsonPath | ConvertFrom-Json -Depth 100 -AsHashtable
 
     # Customise the template for the current project
     $templatePackageJson.name = $SiteName
@@ -153,9 +157,14 @@ task GenerateViteNpmPackageJson {
     $templatePackageJson.bugs.url = "https://$SiteRepositoryUrl/issues"
     $templatePackageJson.homepage = "https://$SiteRepositoryUrl#readme"
 
+    $templatePackageLockJson.name = $SiteName
+    $templatePackageLockJson.packages[""].name = $SiteName
+
     # Copy the customised template into the project
     Write-Build Green "Generating 'package.json' from template [$templatePackageJsonPath]"
-    Set-Content -Path (Join-Path $GeneratedOutputsBasePath 'package.json') -Value ($templatePackageJson | ConvertTo-Json -Depth 100) -Force
+    Set-Content -Path (Join-Path $VellumBasePath 'package.json') -Value ($templatePackageJson | ConvertTo-Json -Depth 100) -Force
+    Write-Build Green "Generating 'package-lock.json' from template [$templatePackageLockJsonPath]"
+    Set-Content -Path (Join-Path $VellumBasePath 'package-lock.json') -Value ($templatePackageLockJson | ConvertTo-Json -Depth 100) -Force
 }
 
 # Synopsis: Runs the 'vite' tool to optimise the generated site
@@ -167,18 +176,16 @@ task RunVite -If { !$Preview } GenerateViteNpmPackageJson,{
     }
     else {        
         exec {
-            Set-Location $GeneratedOutputsBasePath
+            Set-Location $VellumBasePath
             
             # The NPM_CACHE_HIT environment variable will be set by GitHub Actions when an
             # up-to-date 'node_modules' folder was retrieved from cache.
             if ($env:NPM_CACHE_HIT -ne 'true') {
                 Write-Build White "Installing NPM dependencies"
-                if (Test-Path 'package.lock.json') {
-                    exec { & npm ci }
-                }
-                else {
-                    exec { & npm install }
-                }
+                exec { & npm ci }
+            }
+            else {
+                Write-Build White "NPM dependencies restore from cache"
             }
             
             Write-Build Green "Running Vite..."
