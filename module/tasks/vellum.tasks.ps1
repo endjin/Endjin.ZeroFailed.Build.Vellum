@@ -207,6 +207,12 @@ task CopyWWWRootFiles -If { $ViteWasRun } {
     Copy-Item $StaticSiteOutDir/lunr-docs.json -Destination $DistDir -Verbose
 }
 
+task SendDistPathToBuildServer -If {$IsRunningOnCicdServer} {
+    if ($IsGitHubActions) {
+        Write-Output "VELLUM_DIST_PATH=$DistDir" >> $env:GITHUB_OUTPUT
+    }
+}
+
 # Build process extensibility points
 task PreGenerateWebSite -Before GenerateWebSite
 task PostGenerateWebSite -After GenerateWebSite
@@ -221,6 +227,7 @@ task BuildWebSite RunFirst,
                   GenerateWebSite,
                   RunVite,
                   CopyWWWRootFiles,
+                  SendDistPathToBuildServer,
                   RunLast
 
 task . BuildWebSite

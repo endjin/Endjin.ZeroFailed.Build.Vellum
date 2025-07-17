@@ -38,11 +38,16 @@ runs:
       NPM_CACHE_HIT: ${{ steps.cache_npm_dependencies.outputs.cache-hit }}
 
   - run: |
-      zip -r website.zip ${{ github.workspace }}/.dist
+      zip -r website.zip $VELLUM_DIST_PATH
+    if: steps.build.outputs.VELLUM_DIST_PATH != ''
     name: Zip generated web site
     shell: bash
+    env:
+      # This value gets set by the Vellum ZF extension when running the build
+      VELLUM_DIST_PATH: ${{ steps.build.outputs.VELLUM_DIST_PATH }}
 
   - name: Store generated web site
+    if: steps.build.outputs.VELLUM_DIST_PATH != ''
     id: cache_site
     uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684    # v4.2.3
     with:
