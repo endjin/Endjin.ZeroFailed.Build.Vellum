@@ -1,5 +1,5 @@
 {
-    "name": "<placeholder>",
+    "name": "#{SITE_NAME}#",
     "version": "1.0.0",
     "description": "`npm i`",
     "main": "/index.html",
@@ -25,13 +25,13 @@
     ],
     "repository": {
         "type": "git",
-        "url": "git+<placeholder>"
+        "url": "git+#{REPO_URL}#"
     },
     "keywords": [],
     "author": "",
     "license": "ISC",
     "bugs": {
-        "url": "<placeholder>/issues"
+        "url": "#{REPO_URL}#/issues"
     },
-    "homepage": "<placeholder>#readme"
+    "homepage": "#{REPO_URL}##readme"
 }

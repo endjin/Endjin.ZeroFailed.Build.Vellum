@@ -141,35 +141,47 @@ task GenerateWebSite InstallVellum,CopyAssets,{
     }
 }
 
+# Synopsis: Generates tailored NPM package dependency files needed to run Vite
 task GenerateViteNpmPackageJson {
 
-    # Read in the template package.json file
+    # Copy the template package.json file
     $templatePackageJsonPath = Join-Path $PSScriptRoot '..' 'templates' 'vite-package.template.json'
-    $templatePackageJson = Get-Content -Raw $templatePackageJsonPath | ConvertFrom-Json -Depth 100
+    $packageJsonTargetPath = Join-Path $VellumBasePath 'package.json'
+    Copy-Item $templatePackageJsonPath $packageJsonTargetPath -Force
 
-    # Read in the template package-lock.json file
+    # Copy the template package-lock.json file
     $templatePackageLockJsonPath = Join-Path $PSScriptRoot '..' 'templates' 'vite-package-lock.template.json'
-    $templatePackageLockJson = Get-Content -Raw $templatePackageLockJsonPath | ConvertFrom-Json -Depth 100 -AsHashtable
+    $packageLockJsonTargetPath = Join-Path $VellumBasePath 'package-lock.json'
+    Copy-Item $templatePackageLockJsonPath $packageLockJsonTargetPath -Force
 
-    # Customise the template for the current project
-    $templatePackageJson.name = $SiteName
-    $templatePackageJson.repository.url = "git+$SiteRepositoryUrl"
-    $templatePackageJson.bugs.url = "https://$SiteRepositoryUrl/issues"
-    $templatePackageJson.homepage = "https://$SiteRepositoryUrl#readme"
+    # Customise the above files for this repo
+    $filesToPatch = Get-ChildItem -Path $VellumBasePath -Filter 'package*.json'
+    $tokens = @{
+        SITE_NAME = $SiteName
+        REPO_URL = $SiteRepositoryUrl
+    }
+    Edit-TokenizedFiles -FilesToProcess $filesToPatch -TokenValuePairs $tokens -Verbose
+}
 
-    $templatePackageLockJson.name = $SiteName
-    $templatePackageLockJson.packages[""].name = $SiteName
+# Synopsis: Generates a tailored vite.config.js file needed to run Vite
+task GenerateViteConfig {
 
-    # Copy the customised template into the project
-    Write-Build Green "Generating 'package.json' from template [$templatePackageJsonPath]"
-    Set-Content -Path (Join-Path $VellumBasePath 'package.json') -Value ($templatePackageJson | ConvertTo-Json -Depth 100) -Force
-    Write-Build Green "Generating 'package-lock.json' from template [$templatePackageLockJsonPath]"
-    Set-Content -Path (Join-Path $VellumBasePath 'package-lock.json') -Value ($templatePackageLockJson | ConvertTo-Json -Depth 100) -Force
+    # Copy the template vite.config.js file
+    $viteConfigTemplatePath = Join-Path $PSScriptRoot '..' 'templates' 'vite.config.template.js'
+    $viteConfigTargetPath = Join-Path $VellumBasePath 'vite.config.js'
+    Copy-Item $viteConfigTemplatePath $viteConfigTargetPath -Force
+
+    # Customise for this repo
+    $tokens = @{
+        OUTPUT_DIR = $StaticSiteOutDir.Replace('\', '/')
+        DIST_DIR = $DistDir.Replace('\', '/')
+    }
+    Edit-TokenizedFiles -FilesToProcess $viteConfigTargetPath -TokenValuePairs $tokens -Verbose
 }
 
 # Synopsis: Runs the 'vite' tool to optimise the generated site
 $script:ViteWasRun = $false
-task RunVite -If { !$Preview } GenerateViteNpmPackageJson,{
+task RunVite -If { !$Preview } GenerateViteNpmPackageJson,GenerateViteConfig,{
 
     if (!(Test-Path (Join-Path $StaticSiteOutDir 'index.html'))) {
         Write-Warning "The generated site does not include an 'index.html' file, Vite build process will be skipped."
@@ -207,6 +219,7 @@ task CopyWWWRootFiles -If { $ViteWasRun } {
     Copy-Item $StaticSiteOutDir/lunr-docs.json -Destination $DistDir -Verbose
 }
 
+# Synopsis: Publishes the output path of the generated site to CI/CD platforms (currently GitHub Actions only)
 task SendDistPathToBuildServer -If {$IsRunningOnCicdServer} {
     if ($IsGitHubActions) {
         Write-Output "VELLUM_DIST_PATH=$DistDir" >> $env:GITHUB_OUTPUT

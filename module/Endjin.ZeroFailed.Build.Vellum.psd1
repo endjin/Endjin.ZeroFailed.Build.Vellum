@@ -120,6 +120,12 @@ PrivateData = @{
         ExtensionDependencies = @(
             @{
                 # Assume latest stable version
+                Name = "ZeroFailed.DevOps.Common"
+                GitRepository = "https://github.com/zerofailed/ZeroFailed.DevOps.Common"
+                GitRef = "feature/add-file-detokenisation"
+            }
+            @{
+                # Assume latest stable version
                 Name = "ZeroFailed.Build.Common"
                 GitRepository = "https://github.com/zerofailed/ZeroFailed.Build.Common"
                 Process = "tasks/build.process.ps1"
