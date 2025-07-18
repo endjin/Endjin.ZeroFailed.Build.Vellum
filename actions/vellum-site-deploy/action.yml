@@ -35,11 +35,9 @@ runs:
       key: website-${{ github.sha }}
   
   - run: |
+      mkdir website
+      cd website
       unzip website.zip
-      # The zip contains the full folder structure of the original source, so the extracted files
-      # are several layers deep. We need to move the '.dist' folder into the 'website' folder as
-      # this is where it is expected to be.
-      mv home/runner/work/${{ github.event.repository.name }}/${{ github.event.repository.name }}/.dist website
 
       echo "*** DEBUG ***"
       echo "azureClientId: '${{ inputs.azureClientId }}'"
