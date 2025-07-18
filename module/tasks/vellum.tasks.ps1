@@ -209,7 +209,7 @@ task RunVite -If { !$Preview } GenerateViteNpmPackageJson,GenerateViteConfig,{
 }
 
 # Synopsis: Copies the additional non-generated files required by the web site
-task CopyWWWRootFiles -If { $ViteWasRun } {
+task CopyWWWRootFiles -If { $ViteWasRun } RunVite,{
     Write-Build White "Copying other site files..."
     # NOTE: The trailing '\*' on the source path is critical to ensuring a 'wwwroot' folder is not created in the destination
     Copy-Item $StaticSiteOutDir/*.xml -Destination $DistDir -Verbose
@@ -219,11 +219,13 @@ task CopyWWWRootFiles -If { $ViteWasRun } {
     Copy-Item $StaticSiteOutDir/lunr-docs.json -Destination $DistDir -Verbose
 }
 
-# Synopsis: Publishes the output path of the generated site to CI/CD platforms (currently GitHub Actions only)
-task SendDistPathToBuildServer -If {$IsRunningOnCicdServer} {
-    if ($IsGitHubActions) {
-        Write-Output "VELLUM_DIST_PATH=$DistDir" >> $env:GITHUB_OUTPUT
-    }
+# Synopsis: Builds a ZIP file containing the final generated site
+task BuildZipPackage -If { $ViteWasRun } CopyWWWRootFiles,{
+    New-Item -ItemType Directory $PackagesDir -Force | Out-Null
+    Compress-Archive -Path $DistDir/* `
+                     -DestinationPath (Join-Path $here 'website.zip') `
+                     -CompressionLevel Optimal `
+                     -Force
 }
 
 # Build process extensibility points
@@ -240,7 +242,7 @@ task BuildWebSite RunFirst,
                   GenerateWebSite,
                   RunVite,
                   CopyWWWRootFiles,
-                  SendDistPathToBuildServer,
+                  BuildZipPackage,
                   RunLast
 
 task . BuildWebSite
