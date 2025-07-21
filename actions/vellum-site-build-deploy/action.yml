@@ -41,7 +41,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: endjin/Endjin.ZeroFailed.Build.Vellum/actions/vellum-site-build@main
+    - uses: endjin/Endjin.ZeroFailed.Build.Vellum/actions/vellum-site-build@feature/improve-vite-template-gen
       id: build
       with:
         githubVellumPat: ${{ inputs.github_reader_pat }}
