@@ -13,6 +13,23 @@ task ForceEnsureGitHubCli -Before Init {
     $script:SkipEnsureGitHubCli = $false
 }
 
+task EnsureNodeJsVersion {
+
+    # Ref: https://vite.dev/guide/#scaffolding-your-first-vite-project
+    if (!(Get-Command node -ErrorAction Ignore)) {
+        throw "A nodejs installation is required to run this build process - please install v20.19 or later"
+    }
+
+    [semver]$minNodeJsVersion = [semver]"20.19"
+    [semver]$currentNodeJsVersion = (exec { & node --version }).TrimStart("v")
+    if ($currentNodeJsVersion -lt $minNodeJsVersion) {
+        throw "Please update your version of nodejs to at least v$minNodeJsVersion"
+    }
+    else {
+        Write-Build Green "`u{2705} Detected nodejs v$currentNodeJsVersion"
+    }
+}
+
 # Synopsis: Handles lazy evaluation of Vellum tool path for customisation scenarios
 task ResolveVellumCmdPath {
     $script:defaultVellumCmd = Resolve-Value $defaultVellumCmd
@@ -181,7 +198,7 @@ task GenerateViteConfig {
 
 # Synopsis: Runs the 'vite' tool to optimise the generated site
 $script:ViteWasRun = $false
-task RunVite -If { !$Preview } GenerateViteNpmPackageJson,GenerateViteConfig,{
+task RunVite -If { !$Preview } EnsureNodeJsVersion,GenerateViteNpmPackageJson,GenerateViteConfig,{
 
     if (!(Test-Path (Join-Path $StaticSiteOutDir 'index.html'))) {
         Write-Warning "The generated site does not include an 'index.html' file, Vite build process will be skipped."
