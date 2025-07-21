@@ -1,18 +1,16 @@
 {
     "name": "#{SITE_NAME}#",
     "version": "1.0.0",
+    "type": "module",
     "description": "`npm i`",
     "main": "/index.html",
     "devDependencies": {
-        "posthtml-include": "^2.0.1",
-        "rollup-plugin-multi-input": "^1.4.1",
-        "sass": "^1.77.3",
-        "vite": "^5.2.0"
+        "sass": "^1.89.2",
+        "vite": "^7.0.5"
     },
     "dependencies": {
-        "animejs": "^3.2.0",
-        "three": "^0.128.0",
-        "tippy.js": "^6.2.3"
+        "bootstrap": "5.3.7",
+        "typed.js": "2.1.0"
     },
     "scripts": {
         "dev": "vite --host",

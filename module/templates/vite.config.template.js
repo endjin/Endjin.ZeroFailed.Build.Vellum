@@ -1,22 +1,28 @@
 // vite.config.js
 // https://vitejs.dev/config
-import multiInput from 'rollup-plugin-multi-input'
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { resolve, dirname } from 'path'
+import { defineConfig } from 'vite'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
 const __outputDir = '#{OUTPUT_DIR}#'
 const __distDir = '#{DIST_DIR}#'
 
-export default {
-  root: resolve(__dirname, __outputDir),
+export default defineConfig({
+  css: {
+    preprocessorOptions: {
+      scss: {
+        silenceDeprecations: ['mixed-decls', 'color-functions', 'global-builtin', 'import']
+      },
+    }
+  },
+  root: __outputDir,
   build: {
     emptyOutDir: true,
     chunkSizeWarningLimit: 600,
-    outDir: resolve(__dirname, __distDir),
+    outDir: __distDir,
     rollupOptions: {
-      input: resolve(__dirname, __outputDir, '**/*.html'),
-      plugins: [multiInput()],
+      input: {
+        main: resolve(__outputDir, 'index.html'),
+      },
     },
-  }
-}
+  },
+})
