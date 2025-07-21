@@ -1,6 +1,7 @@
 // vite.config.js
 // https://vitejs.dev/config
-import { resolve, dirname } from 'path'
+import { globSync } from "glob"
+import { resolve } from 'path'
 import { defineConfig } from 'vite'
 
 const __outputDir = '#{OUTPUT_DIR}#'
@@ -20,9 +21,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 600,
     outDir: __distDir,
     rollupOptions: {
-      input: {
-        main: resolve(__outputDir, 'index.html'),
-      },
-    },
-  },
+      input: globSync([`${resolve(__outputDir)}/**/*.html`])
+    }
+  }
 })
