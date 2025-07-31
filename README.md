@@ -10,11 +10,11 @@ A [ZeroFailed](https://github.com/zerofailed/ZeroFailed) extension encapsulating
 
 ## Overview
 
-| Component Type | Included | Notes                                                                                                                                                    |
-| -------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Tasks          | yes      |                                                                                                                                                          |
-| Functions      | yes      |                                                                                                                                                          |
-| Processes      | yes      | Also makes minimal use of the default process provided by the [ZeroFailed.Build.Common](https://github.com/zerofailed/ZeroFailed.Build.Common) extension |
+| Component Type | Included | Notes                                                                                                                                                         |
+| -------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tasks          | yes      |                                                                                                                                                               |
+| Functions      | yes      |                                                                                                                                                               |
+| Processes      | yes      | Also uses some of the tasks provided by the process defined in the [ZeroFailed.Build.Common](https://github.com/zerofailed/ZeroFailed.Build.Common) extension |
 
 For more information about the different component types, please refer to the [ZeroFailed documentation](https://github.com/zerofailed/ZeroFailed/blob/main/README.md#extensions).
 
@@ -23,6 +23,26 @@ This extension consists of the following feature groups, click the links to see 
 - Installing Vellum global tool (***NOTE**: Requires a GitHub token with access to this [private repo](https://github.com/endjin/Endjin.StaticSiteGen)*)
 - Runs the static site generator
 - Uses Vite to optimise the generated site
+
+The diagram below shows steps included in this extension's build process.
+
+```mermaid
+graph LR
+    init[Initialise] --> instVellum[Install Vellum CLI]
+    instVellum --> copyAssets[Collate theme assets]
+    copyAssets --> gensite[Generate site content]
+    gensite --> genViteCfg[Generate Vite config]
+    genViteCfg--> runvite[Run Vite]
+    runvite --> copyfiles[Copy additional files]
+    copyfiles --> buildZip[Create site ZIP]
+```
+
+## Pre-Requisites
+
+Using this extension requires the following components to be installed:
+
+- [.NET SDK](https://dotnet.microsoft.com/en-us/download)
+- [GitHub CLI](https://cli.github.com/)
 
 ## Dependencies
 
@@ -54,7 +74,7 @@ $zerofailedExtensions = @(
 )
 ```
 
-To use the extension to build an existing .NET solution, simply add the following properties and task reference to your `config.ps1` file.
+To use the extension to build a web site that uses the Vellum static site generator tooling, simply add the following properties and task reference to your `config.ps1` file.
 
 ```powershell
 # Load the tasks and process

@@ -13,20 +13,21 @@ task ForceEnsureGitHubCli -Before Init {
     $script:SkipEnsureGitHubCli = $false
 }
 
+# Synopsis: Ensures Node.js v20.19 or later is available
 task EnsureNodeJsVersion {
 
     # Ref: https://vite.dev/guide/#scaffolding-your-first-vite-project
     if (!(Get-Command node -ErrorAction Ignore)) {
-        throw "A nodejs installation is required to run this build process - please install v20.19 or later"
+        throw "A Node.js installation is required to run this build process - please install v20.19 or later"
     }
 
     [semver]$minNodeJsVersion = [semver]"20.19"
     [semver]$currentNodeJsVersion = (exec { & node --version }).TrimStart("v")
     if ($currentNodeJsVersion -lt $minNodeJsVersion) {
-        throw "Please update your version of nodejs to at least v$minNodeJsVersion"
+        throw "Please update your version of Node.js to at least v$minNodeJsVersion"
     }
     else {
-        Write-Build Green "`u{2705} Detected nodejs v$currentNodeJsVersion"
+        Write-Build Green "`u{2705} Detected Node.js v$currentNodeJsVersion"
     }
 }
 
@@ -196,8 +197,8 @@ task GenerateViteConfig {
     Edit-TokenizedFiles -FilesToProcess $viteConfigTargetPath -TokenValuePairs $tokens -Verbose
 }
 
-# Synopsis: Runs the 'vite' tool to optimise the generated site
 $script:ViteWasRun = $false
+# Synopsis: Runs the 'vite' tool to optimise the generated site
 task RunVite -If { !$Preview } EnsureNodeJsVersion,GenerateViteNpmPackageJson,GenerateViteConfig,{
 
     if (!(Test-Path (Join-Path $StaticSiteOutDir 'index.html'))) {
@@ -245,15 +246,20 @@ task BuildZipPackage -If { $ViteWasRun } CopyWWWRootFiles,{
                      -Force
 }
 
-# Build process extensibility points
+# Synopsis: [Extensibility Point] Override this task to customise the build process before the site generation stage
 task PreGenerateWebSite -Before GenerateWebSite
+# Synopsis: [Extensibility Point] Override this task to customise the build process after the site generation stage
 task PostGenerateWebSite -After GenerateWebSite
+# Synopsis: [Extensibility Point] Override this task to customise the build process before the Vite optimisation stage
 task PreRunVite -Before RunVite
+# Synopsis: [Extensibility Point] Override this task to customise the build process after the Vite optimisation stage
 task PostRunVite -After RunVite
+# Synopsis: [Extensibility Point] Override this task to customise the build process before the additional static files are copied
 task PreCopyWWWRootFiles -Before CopyWWWRootFiles
+# Synopsis: [Extensibility Point] Override this task to customise the build process after the additional static files are copied
 task PostCopyWWWRootFiles -After CopyWWWRootFiles
 
-# Define the build process, using the basic structure provided by ZeroFailed.Build.Common
+# Synopsis: The entrypoint task for the build process defined in this extension
 task BuildWebSite RunFirst,
                   Init,
                   GenerateWebSite,
