@@ -18,7 +18,7 @@ A [ZeroFailed](https://github.com/zerofailed/ZeroFailed) extension encapsulating
 
 For more information about the different component types, please refer to the [ZeroFailed documentation](https://github.com/zerofailed/ZeroFailed/blob/main/README.md#extensions).
 
-This extension consists of the following feature groups, click the links to see their documentation:
+This extension consists of the following features, refer to the [HELP page](./HELP.md) for more details.
 
 - Installing Vellum global tool (***NOTE**: Requires a GitHub token with access to this [private repo](https://github.com/endjin/Endjin.StaticSiteGen)*)
 - Runs the static site generator
