@@ -46,7 +46,7 @@ runs:
       with:
         githubVellumPat: ${{ inputs.github_reader_pat }}
 
-    - uses: endjin/Endjin.ZeroFailed.Deploy.Vellum/actions/vellum-site-deploy@feature/add-deploy-workflow
+    - uses: endjin/Endjin.ZeroFailed.Deploy.Vellum/actions/vellum-site-deploy@main
       id: deploy
       with:
         azureClientId: ${{ inputs.deployment_client_id }}
