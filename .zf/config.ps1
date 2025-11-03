@@ -13,6 +13,7 @@ $zerofailedExtensions = @(
 # Set the required build options
 $PesterTestsDir = "$here/module"
 $PesterVersion = "5.7.1"
+$PesterCodeCoveragePaths = "$PesterTestsDir/functions"
 $PowerShellModulesToPublish = @(
     @{
         ModulePath = "$here/module/Endjin.ZeroFailed.Build.Vellum.psd1"
@@ -36,7 +37,7 @@ task . FullBuild
 # task PostVersion {}
 task PreBuild {
     if (!$IsRunningOnCICDServer) {
-        # Whwn running locally, ensure the lockfile template is up-to-date
+        # When running locally, ensure the lockfile template is up-to-date
         Set-Location (Join-Path $here 'module' 'templates')
         try {
             Copy-Item vite-package.template.json package.json -Force
