@@ -233,8 +233,11 @@ task CopyWWWRootFiles -If { $ViteWasRun } RunVite,{
     Copy-Item $StaticSiteOutDir/*.xml -Destination $DistDir -Verbose
     Copy-Item $SiteBasePath/content/wwwroot/icons/* $DistDir -Verbose
     Copy-Item $SiteBasePath/content/wwwroot/* -Destination $DistDir -Exclude README.md -Verbose
+
+    if ($env:LUNR) {
     Copy-Item $StaticSiteOutDir/lunr-index.json -Destination $DistDir -Verbose
     Copy-Item $StaticSiteOutDir/lunr-docs.json -Destination $DistDir -Verbose
+    }
 }
 
 # Synopsis: Builds a ZIP file containing the final generated site
