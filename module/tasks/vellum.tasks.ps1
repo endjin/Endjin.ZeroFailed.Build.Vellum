@@ -117,8 +117,8 @@ task CleanOutput {
 task CopyAssets CleanOutput,{
 
     Write-Build White "Copying web site assets..."
-    Copy-Item -Path $SiteBasePath/site/theme/$SiteName/public -Destination $StaticSiteOutDir/public -Filter *.* -Recurse -Force
-    Copy-Item $SiteBasePath/site/content/wwwroot/icons/* $StaticSiteOutDir -Verbose
+    Copy-Item -Path $SiteBasePath/theme/$SiteName/public -Destination $StaticSiteOutDir/public -Filter *.* -Recurse -Force
+    Copy-Item $SiteBasePath/content/wwwroot/icons/* $StaticSiteOutDir -Verbose
 }
 
 # Synopsis: Executes the static site generator
@@ -130,7 +130,7 @@ task GenerateWebSite InstallVellum,CopyAssets,{
         "content"
         "generate"
         "-t"
-        "$SiteBasePath/site/site.yml"
+        "$SiteBasePath/site.yml"
         "-o"
         "$StaticSiteOutDir"
     )
@@ -231,10 +231,13 @@ task CopyWWWRootFiles -If { $ViteWasRun } RunVite,{
     Write-Build White "Copying other site files..."
     # NOTE: The trailing '\*' on the source path is critical to ensuring a 'wwwroot' folder is not created in the destination
     Copy-Item $StaticSiteOutDir/*.xml -Destination $DistDir -Verbose
-    Copy-Item $SiteBasePath/site/content/wwwroot/icons/* $DistDir -Verbose
-    Copy-Item $SiteBasePath/site/content/wwwroot/* -Destination $DistDir -Exclude README.md -Verbose
+    Copy-Item $SiteBasePath/content/wwwroot/icons/* $DistDir -Verbose
+    Copy-Item $SiteBasePath/content/wwwroot/* -Destination $DistDir -Exclude README.md -Verbose
+
+    if ($env:LUNR) {
     Copy-Item $StaticSiteOutDir/lunr-index.json -Destination $DistDir -Verbose
     Copy-Item $StaticSiteOutDir/lunr-docs.json -Destination $DistDir -Verbose
+    }
 }
 
 # Synopsis: Builds a ZIP file containing the final generated site
