@@ -18,7 +18,7 @@ $VellumVersion = ''
 $SiteName = 'undefined-site-name'
 
 # Synopsis: The root path containing the web site source files
-$SiteBasePath = '.'
+$SiteBasePath = './site'
 
 # Synopsis: The URL of the site's git repository (e.g. 'https://github.com/myorg/mysite'); Used to populate configuration for Vite's package.json file
 $SiteRepositoryUrl = 'https://undefined-site-repo-fqdn'
