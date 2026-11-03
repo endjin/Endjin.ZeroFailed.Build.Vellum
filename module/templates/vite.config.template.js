@@ -25,7 +25,9 @@ const __distDir = '#{DIST_DIR}#'
  * and the raw-text content of inline scripts, JSON-LD and styles is never
  * touched. References that Vite bundles itself, external and protocol-relative
  * URLs, and URLs that already carry a query string or fragment are left
- * unchanged.
+ * unchanged. A <link rel="preload|modulepreload"> is versioned only when the same
+ * document also loads that URL via a <script src>, so that preloads keep matching
+ * files that are imported from JavaScript by their plain URL.
  */
 function publicAssetVersioning() {
   let publicDir = null
@@ -49,9 +51,16 @@ function publicAssetVersioning() {
 
   const escapeAttr = (value) => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
 
+  const isPreload = (attrs) =>
+    (attrs.find((a) => a.name === 'rel')?.value ?? '')
+      .toLowerCase()
+      .split(/\s+/)
+      .some((rel) => rel === 'preload' || rel === 'modulepreload')
+
   const findEdits = (html) =>
     new Promise((resolvePromise, reject) => {
-      const edits = []
+      const candidates = []
+      const scriptUrls = new Set()
       const parser = new SAXParser({ sourceCodeLocationInfo: true })
       parser.on('startTag', ({ tagName, attrs, sourceCodeLocation }) => {
         const attrName = urlAttrByTag[tagName]
@@ -61,14 +70,24 @@ function publicAssetVersioning() {
         if (!url || !location || !/^\/(?!\/)[^?#]+$/.test(url)) return
         const hash = hashFor(url)
         if (!hash) return
-        edits.push({
+        if (tagName === 'script') scriptUrls.add(url)
+        candidates.push({
+          url,
+          // A preload only helps if its URL matches the eventual request exactly. When
+          // the file is loaded by a <script src> in this document, that tag is versioned
+          // too, so the preload must be. Otherwise the file is usually requested from
+          // JavaScript (e.g. an import of /js/vendor/lib.mjs) by its plain URL, which
+          // this plugin cannot rewrite, so the preload must stay unversioned to match.
+          preload: tagName === 'link' && isPreload(attrs),
           start: location.startOffset,
           end: location.endOffset,
           text: `${attrName}="${escapeAttr(`${url}?v=${hash}`)}"`,
         })
       })
       parser.on('error', reject)
-      parser.on('finish', () => resolvePromise(edits))
+      parser.on('finish', () =>
+        resolvePromise(candidates.filter((c) => !c.preload || scriptUrls.has(c.url)))
+      )
       parser.resume() // discard the pass-through output so the stream never stalls
       parser.end(html)
     })
