@@ -228,8 +228,20 @@ task RunVite -If { !$Preview } EnsureNodeJsVersion,GenerateViteNpmPackageJson,Ge
                 Write-Build White "NPM dependencies are up-to-date with package-lock.json - skipping install"
             }
             
-            Write-Build Green "Running Vite..."
-            exec { & npm run prod }
+            # Raise the V8 heap limit for Vite unless the caller already set one via NODE_OPTIONS
+            $originalNodeOptions = $env:NODE_OPTIONS
+            if ($ViteMaxOldSpaceSizeMb -gt 0 -and $originalNodeOptions -notmatch '--max-old-space-size') {
+                $env:NODE_OPTIONS = ("$originalNodeOptions --max-old-space-size=$ViteMaxOldSpaceSizeMb").Trim()
+                Write-Build White "Using Node.js heap limit of $ViteMaxOldSpaceSizeMb MB for Vite"
+            }
+
+            try {
+                Write-Build Green "Running Vite..."
+                exec { & npm run prod }
+            }
+            finally {
+                $env:NODE_OPTIONS = $originalNodeOptions
+            }
         }
 
         $script:ViteWasRun = $true

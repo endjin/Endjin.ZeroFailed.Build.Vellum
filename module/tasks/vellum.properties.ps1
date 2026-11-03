@@ -38,6 +38,9 @@ $Preview ??= $false
 # Synopsis: When true, enables the watch mode which causes the build to wait indefinitely and regenerate the site when file changes are detected
 $Watch ??= $false
 
+# Synopsis: The maximum V8 heap size, in MB, for the Node.js process that runs Vite. Vite 8 needs about 2 GB for a site of ~1,200 pages, which exceeds Node's default limit on 7 GB CI runners. Set to 0 to use Node's default.
+$ViteMaxOldSpaceSizeMb = [int](property ZF_BUILD_VELLUM_VITE_MAX_OLD_SPACE_SIZE_MB 4096)
+
 # Synopsis: The GitHub token used to obtain the release artifact for the vellum cli global tool
 $VellumReleaseGitHubToken = property ZF_BUILD_VELLUM_RELEASE_GITHUB_TOKEN ''
 
