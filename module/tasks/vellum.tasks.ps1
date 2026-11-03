@@ -13,18 +13,21 @@ task ForceEnsureGitHubCli -Before Init {
     $script:SkipEnsureGitHubCli = $false
 }
 
-# Synopsis: Ensures Node.js v20.19 or later is available
+# Synopsis: Ensures a Node.js version supported by Vite 8 is available (v20.19+ or v22.12+)
 task EnsureNodeJsVersion {
 
     # Ref: https://vite.dev/guide/#scaffolding-your-first-vite-project
+    # Vite 8 'engines': ^20.19.0 || >=22.12.0
+    $supportedVersionsMessage = "v20.19 or later in the v20 line, or v22.12 or later"
     if (!(Get-Command node -ErrorAction Ignore)) {
-        throw "A Node.js installation is required to run this build process - please install v20.19 or later"
+        throw "A Node.js installation is required to run this build process - please install $supportedVersionsMessage"
     }
 
-    [semver]$minNodeJsVersion = [semver]"20.19"
     [semver]$currentNodeJsVersion = (exec { & node --version }).TrimStart("v")
-    if ($currentNodeJsVersion -lt $minNodeJsVersion) {
-        throw "Please update your version of Node.js to at least v$minNodeJsVersion"
+    $isSupported = ($currentNodeJsVersion.Major -eq 20 -and $currentNodeJsVersion -ge [semver]"20.19.0") -or
+                   ($currentNodeJsVersion -ge [semver]"22.12.0")
+    if (!$isSupported) {
+        throw "Node.js v$currentNodeJsVersion is not supported by Vite - please install $supportedVersionsMessage"
     }
     else {
         Write-Build Green "`u{2705} Detected Node.js v$currentNodeJsVersion"
@@ -208,14 +211,21 @@ task RunVite -If { !$Preview } EnsureNodeJsVersion,GenerateViteNpmPackageJson,Ge
         exec {
             Set-Location $VellumBasePath
             
-            # The NPM_CACHE_HIT environment variable will be set by GitHub Actions when an
-            # up-to-date 'node_modules' folder was retrieved from cache.
-            if ($env:NPM_CACHE_HIT -ne 'true') {
+            # Only skip 'npm ci' when the existing 'node_modules' folder (e.g. restored from the
+            # GitHub Actions cache) was installed from this exact package-lock.json. A marker file
+            # records the hash of the lock file used for the last install, so a cache entry from
+            # an older template (e.g. a previous Vite major version) is never reused by mistake.
+            $lockHash = (Get-FileHash -Algorithm SHA256 -Path (Join-Path $VellumBasePath 'package-lock.json')).Hash
+            $lockHashMarkerPath = Join-Path $VellumBasePath 'node_modules' '.zf-package-lock.sha256'
+            $installedLockHash = (Test-Path $lockHashMarkerPath) ? (Get-Content -Raw $lockHashMarkerPath).Trim() : $null
+
+            if ($installedLockHash -ne $lockHash) {
                 Write-Build White "Installing NPM dependencies"
                 exec { & npm ci }
+                Set-Content -Path $lockHashMarkerPath -Value $lockHash -NoNewline
             }
             else {
-                Write-Build White "NPM dependencies restore from cache"
+                Write-Build White "NPM dependencies are up-to-date with package-lock.json - skipping install"
             }
             
             Write-Build Green "Running Vite..."

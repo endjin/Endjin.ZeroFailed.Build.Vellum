@@ -17,15 +17,25 @@ runs:
     shell: bash
   - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+  # '.vellum/package-lock.json' is generated from the module's template during the build, so it
+  # does not exist yet at this point. Key the cache on the template instead, which ships with
+  # this action. hashFiles() only reads the workspace, so compute the hash directly.
+  - name: Compute NPM cache key
+    id: npm_cache_key
+    shell: bash
+    run: |
+      lock_template="${{ github.action_path }}/../../module/templates/vite-package-lock.template.json"
+      echo "hash=$(sha256sum "$lock_template" | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
   - name: Get cached NPM modules
     id: cache_npm_dependencies
     uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7    # v5.0.4
     with:
       path: |
         .vellum/node_modules
-      key: ${{ runner.os }}-npm-${{ hashFiles('.vellum/package-lock.json') }}
+      key: ${{ runner.os }}-npm-vite-${{ steps.npm_cache_key.outputs.hash }}
       restore-keys: |
-        ${{ runner.os }}-npm-
+        ${{ runner.os }}-npm-vite-
 
   - uses: endjin/Endjin.RecommendedPractices.GitHubActions/actions/run-scripted-build@main
     id: build
@@ -35,7 +45,6 @@ runs:
       tasks: '.'
     env:
       GH_TOKEN : ${{ inputs.githubVellumPat }}
-      NPM_CACHE_HIT: ${{ steps.cache_npm_dependencies.outputs.cache-hit }}
 
   - name: Store generated web site
     id: cache_site

@@ -20,7 +20,7 @@ export default defineConfig({
     emptyOutDir: true,
     chunkSizeWarningLimit: 600,
     outDir: __distDir,
-    rollupOptions: {
+    rolldownOptions: {
       input: globSync([`${resolve(__outputDir)}/**/*.html`])
     }
   }
