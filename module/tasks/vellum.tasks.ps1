@@ -230,7 +230,8 @@ task RunVite -If { !$Preview } EnsureNodeJsVersion,GenerateViteNpmPackageJson,Ge
             
             # Raise the V8 heap limit for Vite unless the caller already set one via NODE_OPTIONS
             $originalNodeOptions = $env:NODE_OPTIONS
-            if ($ViteMaxOldSpaceSizeMb -gt 0 -and $originalNodeOptions -notmatch '--max-old-space-size') {
+            # (Node accepts V8 flags with '-' or '_' separators, e.g. --max_old_space_size)
+            if ($ViteMaxOldSpaceSizeMb -gt 0 -and $originalNodeOptions -notmatch '--max[-_]old[-_]space[-_]size') {
                 $env:NODE_OPTIONS = ("$originalNodeOptions --max-old-space-size=$ViteMaxOldSpaceSizeMb").Trim()
                 Write-Build White "Using Node.js heap limit of $ViteMaxOldSpaceSizeMb MB for Vite"
             }

@@ -26,8 +26,9 @@ const __distDir = '#{DIST_DIR}#'
  * touched. References that Vite bundles itself, external and protocol-relative
  * URLs, and URLs that already carry a query string or fragment are left
  * unchanged. A <link rel="preload|modulepreload"> is versioned only when the same
- * document also loads that URL via a <script src>, so that preloads keep matching
- * files that are imported from JavaScript by their plain URL.
+ * document also loads that URL through a tag the plugin versions (a <script src>,
+ * or a non-preload <link href> such as a stylesheet), so that preloads keep
+ * matching files that are imported from JavaScript by their plain URL.
  */
 function publicAssetVersioning() {
   let publicDir = null
@@ -60,7 +61,7 @@ function publicAssetVersioning() {
   const findEdits = (html) =>
     new Promise((resolvePromise, reject) => {
       const candidates = []
-      const scriptUrls = new Set()
+      const consumerUrls = new Set()
       const parser = new SAXParser({ sourceCodeLocationInfo: true })
       parser.on('startTag', ({ tagName, attrs, sourceCodeLocation }) => {
         const attrName = urlAttrByTag[tagName]
@@ -70,15 +71,17 @@ function publicAssetVersioning() {
         if (!url || !location || !/^\/(?!\/)[^?#]+$/.test(url)) return
         const hash = hashFor(url)
         if (!hash) return
-        if (tagName === 'script') scriptUrls.add(url)
+        const preload = tagName === 'link' && isPreload(attrs)
+        if (!preload) consumerUrls.add(url)
         candidates.push({
           url,
           // A preload only helps if its URL matches the eventual request exactly. When
-          // the file is loaded by a <script src> in this document, that tag is versioned
-          // too, so the preload must be. Otherwise the file is usually requested from
-          // JavaScript (e.g. an import of /js/vendor/lib.mjs) by its plain URL, which
-          // this plugin cannot rewrite, so the preload must stay unversioned to match.
-          preload: tagName === 'link' && isPreload(attrs),
+          // the file is loaded by another tag in this document (<script src>, or a
+          // <link rel="stylesheet"> etc.), that tag is versioned too, so the preload
+          // must be. Otherwise the file is usually requested from JavaScript (e.g. an
+          // import of /js/vendor/lib.mjs) by its plain URL, which this plugin cannot
+          // rewrite, so the preload must stay unversioned to match.
+          preload,
           start: location.startOffset,
           end: location.endOffset,
           text: `${attrName}="${escapeAttr(`${url}?v=${hash}`)}"`,
@@ -86,7 +89,7 @@ function publicAssetVersioning() {
       })
       parser.on('error', reject)
       parser.on('finish', () =>
-        resolvePromise(candidates.filter((c) => !c.preload || scriptUrls.has(c.url)))
+        resolvePromise(candidates.filter((c) => !c.preload || consumerUrls.has(c.url)))
       )
       parser.resume() // discard the pass-through output so the stream never stalls
       parser.end(html)
