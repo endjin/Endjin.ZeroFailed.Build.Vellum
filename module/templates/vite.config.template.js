@@ -131,7 +131,10 @@ export default defineConfig({
     chunkSizeWarningLimit: 600,
     outDir: __distDir,
     rolldownOptions: {
-      input: globSync([`${resolve(__outputDir)}/**/*.html`])
+      // Glob relative to the output folder and ask for absolute results. An absolute pattern
+      // built with path.resolve() contains backslashes on Windows, which glob treats as escape
+      // characters, so it returns cwd-relative matches that Vite then fails to resolve against 'root'.
+      input: globSync('**/*.html', { cwd: __outputDir, absolute: true })
     }
   }
 })
