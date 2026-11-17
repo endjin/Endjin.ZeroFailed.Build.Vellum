@@ -3,7 +3,10 @@
 # </copyright>
 
 # Internal properties
-$defaultVellumCmd = { Join-Path $VellumBasePath 'bin' 'vellum' }
+# On Windows, name the .exe explicitly. PowerShell resolves a bare 'vellum' to an extensionless file first, and
+# a checkout shared with a Linux devcontainer can contain the Linux launcher of that name. Windows cannot run it,
+# so '& vellum' returns without output or an exit code, and 'exec' reports success without generating the site.
+$defaultVellumCmd = { Join-Path $VellumBasePath 'bin' ($IsWindows ? 'vellum.exe' : 'vellum') }
 
 . $PSScriptRoot/vellum.properties.ps1
 
